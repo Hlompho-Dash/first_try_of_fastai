@@ -37,6 +37,7 @@ class ParamScheduler(Callback):
     if self.in_train: self.set_param()
 
 
+
 def annealer(f):
   def _inner(start, end): return partial(f, start, end)
   return _inner
@@ -44,12 +45,14 @@ def annealer(f):
 @annealer
 def sched_lin(start, end, pos): return start + pos*(end-start)
 
+
 @annealer
 def sched_cos(start, end, pos): return start + (1 + math.cos(math.pi*(1-pos))) * (end - start) / 2
 @annealer
 def sched_no(start, end, pos): return start
 @annealer
 def sched_exp(start, end, pos): return start * (end/start) ** pos
+
 
  def combine_scheds(pcts, scheds):
     assert sum(pcts) == 1.
