@@ -11,7 +11,7 @@ os.chdir('/content/gdrive/MyDrive/first_try_of_fastai')
 class Callback():
   _order = 0
   def set_runner(self, run): self.run = run
-  def __getattr__(self,k): return gettattr(self.run, k)
+  def __getattr__(self, k): return getattr(self.run, k)
 
   @property
   def name(self):
@@ -28,7 +28,7 @@ class TrainEvalCallback(Callback):
     self.run.n_epochs=0.
     self.run.n_iter=0
 
-  def ater_batch(self):
+  def after_batch(self):
     if not self.in_train:return
     self.run.n_epochs += 1./self.iters
     self.run.n_iter += 1
@@ -36,7 +36,7 @@ class TrainEvalCallback(Callback):
   def begin_epoch(self):
     self.run.n_epochs = self.epoch
     self.model.train()
-    self.in_train = True
+    self.run.in_train = True
 
   def begin_validate(self):
     self.model.eval()
@@ -49,12 +49,12 @@ class CancelBatchException(Exception): pass
 class Runner():
   def __init__(self, cbs=None,cb_funcs=None):
     cbs = listify(cbs)
-    for cbf in listify(cbs):
+    for cbf in listify(cb_funcs):
       cb = cbf()
-      setattr(self, c.name, cb)
+      setattr(self, cb.name, cb)
       cbs.append(cb)
-    self.stop,sefl.cbs = False, [TrainEvalCallback()]+cbs
-
+    self.stop,self.cbs, self.in_train = False, [TrainEvalCallback()]+cbs, True
+    #added self.in_train to get code working
   @property
   def opt(self):        return self.learn.opt
   @property
@@ -72,14 +72,14 @@ class Runner():
       self('after_pred')
       self.loss = self.loss_func(self.pred, self.yb)
       self('after_loss')
-      if not self.in_train(): return
-      self.loss_backward()
+      if not self.in_train: return
+      self.loss.backward()
       self('after_backward')
       self.opt.step()
       self('after_step')
       self.opt.zero_grad()
-      except CancelBatchException: self('after_cancel_batch')
-      finally: self('after_batch')
+    except CancelBatchException: self('after_cancel_batch')
+    finally: self('after_batch')
 
   def all_batches(self, dl):
     self.iters = len(dl)
