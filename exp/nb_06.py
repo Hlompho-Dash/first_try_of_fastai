@@ -12,6 +12,15 @@ def normalize_to(train, valid):
   m, s = train.mean(), train.std()
   return normalize(train, m, s), normalize(valid, m, s)
 
+class Lambda(nn.Module):
+  def __init__(self, func):
+    super().__init__()
+    self.func = func
+
+  def forward(self, x): return self.func(x)
+
+def flatten(x): return x.view(x.shape[0], -1)
+
 class CudaCallback(Callback):
   def begin_fit(self): self.model.cuda()
   def begin_batch(self): self.run.xb,self.run.yb = self.xb.cuda(),self.yb.cuda()
