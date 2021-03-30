@@ -12,6 +12,10 @@ def normalize_to(train, valid):
   m, s = train.mean(), train.std()
   return normalize(train, m, s), normalize(valid, m, s)
 
+class CudaCallback(Callback):
+  def begin_fit(self): self.model.cuda()
+  def begin_batch(self): self.run.xb,self.run.yb = self.xb.cuda(),self.yb.cuda()
+
 class BatchTransformXCallback(Callback):
   _order=2
   def __init__(self, tfm): self.tfm = tfm
