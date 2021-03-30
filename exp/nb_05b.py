@@ -53,10 +53,10 @@ class Runner():
       cb = cbf()
       setattr(self, cb.name, cb)
       cbs.append(cb)
-    self.stop = False
     self.cbs = [TrainEvalCallback()]+cbs
-    self.in_train = True
-    #added self.in_train to get code working
+    self.stop = False
+    self.in_train = True     #added self.in_train to get code working
+
   @property
   def opt(self):        return self.learn.opt
   @property
