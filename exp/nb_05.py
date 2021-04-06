@@ -54,7 +54,7 @@ def sched_no(start, end, pos): return start
 def sched_exp(start, end, pos): return start * (end/start) ** pos
 
 
- def combine_scheds(pcts, scheds):
+def combine_scheds(pcts, scheds):
     assert sum(pcts) == 1.
     pcts = tensor([0] + listify(pcts))
     assert torch.all(pcts>=0)
