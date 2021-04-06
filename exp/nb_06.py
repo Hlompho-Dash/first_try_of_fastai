@@ -61,6 +61,15 @@ class ListContainer():
 
 from torch.nn import init
 
+class Lambda(nn.Module):
+  def __init__(self, func):
+    super().__init__()
+    self.func = func
+
+  def forward(self, x): return self.func(x)
+
+def flatten(x): return x.view(x.shape[0], -1)
+
 class Hooks(ListContainer):
   def __init__(self, ms, f): super().__init__([Hook(m, f) for m in ms])
   def __enter__(self, *args): return self
