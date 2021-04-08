@@ -155,3 +155,82 @@ def label_by_func(sd, f):
   train = LabeledData._label_by_func(sd.train, f, proc)
   valid = LabeledData._label_by_func(sd.valid, f, proc)
   return SplitData(train, valid)
+
+class ResizeFixed(Transform):
+  _order = 10
+  def __init__(self, size):
+    if isinstance(size, int): size = (size, size)
+    self.size = size
+
+  def __call__(self, item): return item.resize(self.size, PIL.Image.BILINEAR)
+
+def to_byte_tensor(item):
+  res = torch.ByteTensor(torch.ByteStorage.from_buffer(item.tobytes()))
+  w,h = item.size
+  return res.view(h,w,-1).permute(2,0,1)
+to_byte_tensor._order = 20
+
+def to_float_tensor(item): return item.float().div_(255.)
+to_float_tensor._order = 30
+
+def show_image(im, figsize=(3,3)):
+  plt.figure(figsize=figsize)
+  plt.axis('off')
+  plt.imshow(im.permute(1,2,0))
+
+class DataBunch():
+  def __init__(self, train_dl, valid_dl, c_in = None, c_out=None):
+    self.train_dl, self.valid_dl, self.c_in, self.c_out = train_dl,valid_dl,c_in,c_out
+
+  @property
+  def train_ds(self): return self.train_dl.dataset
+
+  @property
+  def valid_ds(self): return self.valid_dl.dataset
+
+def databunchify(sd, bs, c_in=None, c_out=None, **kwargs):
+  dls = get_dls(sd.train, sd.valid, bs, **kwargs)
+  return DataBunch(*dls, c_in=c_in, c_out=c_out)
+
+SplitData.to_databunch = databunchify
+
+def normalize_chan(x, mean, std):
+  return (x-mean[...,None,None]) / std[...,None,None]
+
+_m = tensor([0.47, 0.48, 0.45])
+_s = tensor([0.29, 0.28, 0.30])
+
+norm_imagenette = partial(normalize_chan, mean= _m.cuda(), std=_s.cuda())
+
+import math
+def prev_pow_2(x): 2**math.floor(math.log2(x))
+
+def get_cnn_layers(data, nfs, layer, **kwargs):
+  def f(ni,nf,stride=2): return layer(ni, nf,3,stride=stride, **kwargs)
+  print(data.c_in)
+  l1 = data.c_in
+  l2 = prev_pow_2(l1*3*3)
+  layers = [f(l1 , l2 , stride=1 ),
+            f(l2 , l2*2 , stride=2),
+            f(l2*2, l2*4 , stride=2)]
+  nfs = [l2*4] + nfs
+  layers += [f(nfs[i], nfs[i+1]) for i in range(len(nfs)-1)]
+  layers += [nn.AdaptiveAvgPool2d(1), Lambda(flatten),
+             nn.Linear(nfs[-1], data.c_out)]
+  return layers
+
+def get_cnn_model(data, nfs, layer, **kwargs):
+  return nn.Sequential(*get_cnn_layers(data,nfs,layer,**kwargs))
+
+def get_learn_run(nfs, data, lr, layer, cbs=None,opt_func=None, **kwargs):
+  model = get_cnn_model(data, nfs, layer, **kwargs)
+  init_cnn(model)
+  return get_runner(model, data, lr=lr, cbs=cbs, opt_func=opt_func)
+
+def model_summary(run, learn, find_all=False):
+  xb,yb = get_batch(data.valid_dl, run)
+  device = next(learn.model.parameters()).device
+  xb,yb = xb.to(device),yb.to(device)
+  mods = find_modules(learn.model, is_lin_layer) if find_all else learn.model.children()
+  f = lambda hook,mod,inp,out: print(f'{mod}\n{out.shape}\n')
+  with Hooks(mods, f) as hooks: learn.model(xb)
