@@ -4,7 +4,11 @@
 #################################################
 # file to edit: dev_nb/09c_add_progress_bar.ipynb
 
-from exp.nb_09b import *
+#export
+import os
+os.chdir('/content/gdrive/MyDrive/first_try_of_fastai/exp')
+from nb_09b import *
+os.chdir('/content/gdrive/MyDrive/first_try_of_fastai')
 import time
 from fastprogress import master_bar, progress_bar
 from fastprogress.fastprogress import format_time

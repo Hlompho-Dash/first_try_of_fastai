@@ -4,7 +4,11 @@
 #################################################
 # file to edit: dev_nb/09_optimizers.ipynb
 
-from exp.nb_08 import *
+#export
+import os
+os.chdir('/content/gdrive/MyDrive/first_try_of_fastai/exp')
+from nb_08 import *
+os.chdir('/content/gdrive/MyDrive/first_try_of_fastai')
 
 def sgd_step(p, lr, **kwargs):
     p.data.add_(-lr, p.grad.data)
