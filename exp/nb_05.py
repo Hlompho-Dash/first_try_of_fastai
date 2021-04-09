@@ -64,3 +64,6 @@ def combine_scheds(pcts, scheds):
       actual_pos = (pos-pcts[idx]) / (pcts[idx+1] - pcts[idx])
       return scheds[idx](actual_pos)
     return _inner
+
+def cos_1cycle_anneal(start, high, end):
+    return [sched_cos(start, high), sched_cos(high, end)]
