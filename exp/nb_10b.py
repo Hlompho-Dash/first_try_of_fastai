@@ -4,7 +4,10 @@
 #################################################
 # file to edit: dev_nb/10b_mixup_label_smoothing.ipynb
 
-from exp.nb_10 import *
+import os
+os.chdir('/content/gdrive/MyDrive/first_try_of_fastai/exp')
+from nb_10 import *
+os.chdir('/content/gdrive/MyDrive/first_try_of_fastai')
 
 class NoneReduce():
     def __init__(self, loss_func):

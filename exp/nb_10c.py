@@ -4,7 +4,11 @@
 #################################################
 # file to edit: dev_nb/10c_fp16.ipynb
 
-from exp.nb_10b import *
+import os
+os.chdir('/content/gdrive/MyDrive/first_try_of_fastai/exp')
+from nb_10b import *
+os.chdir('/content/gdrive/MyDrive/first_try_of_fastai')
+
 
 import apex.fp16_utils as fp16
 

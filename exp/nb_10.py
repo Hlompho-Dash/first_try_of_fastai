@@ -6,7 +6,7 @@
 #export
 import os
 os.chdir('/content/gdrive/MyDrive/first_try_of_fastai/exp')
-from exp.nb_09c import *
+from nb_09c import *
 os.chdir('/content/gdrive/MyDrive/first_try_of_fastai')
 
 
