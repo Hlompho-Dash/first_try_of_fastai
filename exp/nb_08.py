@@ -136,25 +136,39 @@ class ProcessedItemList(ListContainer):
 
 def parent_labeler(fn): return fn.parent.name
 
-def _label_by_func(ds, f): return [f(o) for o in ds.items]
+def _label_by_func(ds, f, cls=ItemList): return cls([f(o) for o in ds.items], path=ds.path)
 
+#This is a slightly different from what was seen during the lesson,
+#   we'll discuss the changes in lesson 11
 class LabeledData():
-  def __init__(self, x ,y): self.x, self.y = x,y
+    def process(self, il, proc): return il.new(compose(il.items, proc))
 
-  def __repr__(self): return f'{self.__class__.__name__}\nx: {self.x}\ny:{self.y}\n'
-  def __getitem__(self, idx): return self.x[idx], self.y[idx]
+    def __init__(self, x, y, proc_x=None, proc_y=None):
+        self.x,self.y = self.process(x, proc_x),self.process(y, proc_y)
+        self.proc_x,self.proc_y = proc_x,proc_y
 
-  @classmethod
-  def _label_by_func(cls, il, f, proc=None):
-    labels = _label_by_func(il, f)
-    proc_labels = ProcessedItemList(labels, proc)
-    return cls(il, proc_labels)
+    def __repr__(self): return f'{self.__class__.__name__}\nx: {self.x}\ny: {self.y}\n'
+    def __getitem__(self,idx): return self.x[idx],self.y[idx]
+    def __len__(self): return len(self.x)
 
-def label_by_func(sd, f):
-  proc = CategoryProcessor()
-  train = LabeledData._label_by_func(sd.train, f, proc)
-  valid = LabeledData._label_by_func(sd.valid, f, proc)
-  return SplitData(train, valid)
+    def x_obj(self, idx): return self.obj(self.x, idx, self.proc_x)
+    def y_obj(self, idx): return self.obj(self.y, idx, self.proc_y)
+
+    def obj(self, items, idx, procs):
+        isint = isinstance(idx, int) or (isinstance(idx,torch.LongTensor) and not idx.ndim)
+        item = items[idx]
+        for proc in reversed(listify(procs)):
+            item = proc.deproc1(item) if isint else proc.deprocess(item)
+        return item
+
+    @classmethod
+    def label_by_func(cls, il, f, proc_x=None, proc_y=None):
+        return cls(il, _label_by_func(il, f), proc_x=proc_x, proc_y=proc_y)
+
+def label_by_func(sd, f, proc_x=None, proc_y=None):
+    train = LabeledData.label_by_func(sd.train, f, proc_x=proc_x, proc_y=proc_y)
+    valid = LabeledData.label_by_func(sd.valid, f, proc_x=proc_x, proc_y=proc_y)
+    return SplitData(train,valid)
 
 class ResizeFixed(Transform):
   _order = 10
